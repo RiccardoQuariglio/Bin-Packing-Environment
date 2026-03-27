@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import csv
 from abc import ABC, abstractmethod
 from instances.instance import Instance
 
