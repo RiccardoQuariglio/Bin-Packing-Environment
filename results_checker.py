@@ -58,7 +58,7 @@ if __name__ == '__main__':
     print("\n================ SOLUTION CHECK ================\n")
 
     for vidx, group in groups:
-        vehicle_type = f"V{group.iloc[0]['type_vehicle']}"
+        vehicle_type = group.iloc[0]['type_vehicle']
         vehicle = vehicles_dict[vehicle_type]
 
         vehicle_ok = True
