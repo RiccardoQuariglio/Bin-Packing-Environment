@@ -9,7 +9,7 @@ if __name__ == '__main__':
     
     vehicle_to_visualize = 0
 
-    dataset_name = 'DatasetX'
+    dataset_name = 'DatasetA'
     solver_name = 'solver_000000'
     inst = Instance(dataset_name)
 
@@ -36,7 +36,6 @@ if __name__ == '__main__':
             return w, h, d
         elif rot == 5:
             return h, w, d
-
         else:
             raise ValueError("Invalid rotation")
     # ---------------------------
