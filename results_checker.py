@@ -88,8 +88,8 @@ if __name__ == '__main__':
             # -------------------------
             # Bounds
             # -------------------------
-            if box["x2"] > vehicle["width"] or \
-            box["y2"] > vehicle["depth"] or \
+            if box["x2"] > vehicle["depth"] or \
+            box["y2"] > vehicle["width"] or \
             box["z2"] > vehicle["height"]:
                 print(f"\nVehicle {vidx} ({vehicle_type}):")
                 print(f"OUT OF BOUNDS: {item_id}")
