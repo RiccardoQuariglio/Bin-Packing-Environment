@@ -1,0 +1,63 @@
+from abstract_solver import AbstractSolver
+from additional_script import AdditionalScript
+from item import Item
+from container import Container
+
+class solver_XXXXXX_YYYYYY(AbstractSolver):
+
+    def __init__(self, inst):
+        #Inizializzazione delle variabili che andrò a usare nel solver
+        super().__init__(inst)
+        self.items = []
+        self.containers = []
+        self.additional_script = AdditionalScript()
+
+    # Metodo solve() costituito da più parti:
+    # 1) Memorizzazione degli items e dei containers del dataset in questione in liste
+    # 2) Sorting degli items secondo uno specifico criterio
+
+    def solve(self):
+
+        # 1.0) Memorizzazione Items
+        self.items = self.additional_script._load_items(self.inst.df_items)
+        # 1.1) Memorizzazione Containers
+        self.containers = self.additional_script._load_containers(self.inst.df_vehicles)
+
+        # 2) Sorting degli items
+        self.items_by_width_increasing = self.additional_script._sort_items_by_width_increasing(self.items)
+        self.items_by_volume_decreasing = self.additional_script._sort_items_by_volume_decreasing(self.items)
+
+
+        
+        self.write_solution_to_file()
+
+
+
+#test per vedere se la memorizzazione funziona W
+if __name__ == "__main__":
+    from instances import Instance
+    import os
+    import sys
+
+    os.chdir(os.path.dirname(os.getcwd()))
+    sys.path.append(os.getcwd())
+    dataset_name = 'Dataset0'
+
+    try:
+        inst = Instance(dataset_name)
+
+        my_solver = solver_XXXXXX_YYYYYY(inst)
+
+        print(f"--- Test Sorting {dataset_name} ---")
+        my_solver.solve()
+        print(f"--- Lista sortata per width crescente ---")
+        for item in my_solver.items_by_width_increasing:
+            print(f"Item: {item.id}, Width: {item.width}")
+
+        print(f"--- Lista sortata per volume decrescente ---")
+        for item in my_solver.items_by_volume_decreasing:
+            print(f"Item: {item.id}, Volume: {item.width * item.depth * item.height}")
+
+
+    except Exception as e:
+        print(f"Errore durante il test: {e}")
