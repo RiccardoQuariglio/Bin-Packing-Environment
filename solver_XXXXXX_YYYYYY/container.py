@@ -1,3 +1,5 @@
+#Ciao Riki
+
 class Container:
     def __init__(self, type_name, width, depth, height, max_weight, cost, max_value, gravity):
         self.type = type_name
