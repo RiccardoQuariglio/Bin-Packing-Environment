@@ -1,5 +1,5 @@
 from instances import Instance
-from solver_000000 import solver_000000
+from solver_XXXXXX_YYYYYY import solver_XXXXXX_YYYYYY
 
 if __name__ == '__main__':
 
@@ -7,6 +7,6 @@ if __name__ == '__main__':
 
     inst = Instance(dataset_name)
 
-    solver = solver_000000(inst)
+    solver = solver_XXXXXX_YYYYYY(inst)
 
     solver.solve()
