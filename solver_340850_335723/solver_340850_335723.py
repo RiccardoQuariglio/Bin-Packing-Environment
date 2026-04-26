@@ -24,7 +24,7 @@ class solver_340850_335723(AbstractSolver):
         self.containers = self.additional_script._load_containers(self.inst.df_vehicles)
 
         # 2) Sorting degli items
-        self.items_by_width_increasing = self.additional_script._sort_items_by_width_increasing(self.items)
+        self.items_by_h_a_w = self.additional_script._sorted_items_h_a_w(self.items)
         self.items_by_volume_decreasing = self.additional_script._sort_items_by_volume_decreasing(self.items)
 
 
@@ -34,6 +34,7 @@ class solver_340850_335723(AbstractSolver):
 
 
 #test per vedere se il sorting funziona
+"""
 if __name__ == "__main__":
     #Non cambiare
     from instances import Instance
@@ -54,9 +55,8 @@ if __name__ == "__main__":
 
         print(f"--- Test Sorting {dataset_name} ---")
         my_solver.solve()
-        print(f"--- Lista sortata per width crescente ---")
-        for item in my_solver.items_by_width_increasing:
-            print(f"Item: {item.id}, Width: {item.width}")
+        print(f"--- Lista sortata per h,a,w decrescente ---")
+        print(my_solver.sorted_items_h_a_w(my_solver.items))
 
         print(f"--- Lista sortata per volume decrescente ---")
         for item in my_solver.items_by_volume_decreasing:
@@ -65,3 +65,32 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"Errore durante il test: {e}")
+"""
+"""
+if __name__ == "__main__":
+    #Non cambiare
+    from instances import Instance
+    import os
+    import sys
+
+    os.chdir(os.path.dirname(os.getcwd()))
+    sys.path.append(os.getcwd())
+    #fino a qua
+    dataset_name = 'Dataset0'    #qua puoi cambiare il dataset
+    
+
+    try:
+        #Non cambiare
+        inst = Instance(dataset_name)
+        my_solver = solver_340850_335723(inst)
+        #fino a qua
+
+        print(f"--- Test Sorting {dataset_name} ---")
+        my_solver.solve()
+        print(f"--- Lista sortata per h,a,w decrescente ---")
+        for item in my_solver.items_by_h_a_w:
+            print(f"ID: {item.id} | H: {item.curr_height}, A: {item.curr_depth*item.curr_width}, W: {item.weight}")
+    except Exception as e:
+        print(f"Errore durante il test: {e}")
+        """
+
