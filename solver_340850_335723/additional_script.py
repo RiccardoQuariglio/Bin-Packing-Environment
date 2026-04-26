@@ -91,6 +91,5 @@ class AdditionalScript():
         scored_items.sort(key=lambda x: x[1], reverse=True)
         return scored_items
     
-    
-    def donothing(self):
+    def prova(self):
         pass
