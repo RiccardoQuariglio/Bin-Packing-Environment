@@ -3,7 +3,7 @@ from additional_script import AdditionalScript
 from item import Item
 from container import Container
 
-class solver_XXXXXX_YYYYYY(AbstractSolver):
+class solver_340850_335723(AbstractSolver):
 
     def __init__(self, inst):
         #Inizializzazione delle variabili che andrò a usare nel solver
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     try:
         inst = Instance(dataset_name)
 
-        my_solver = solver_XXXXXX_YYYYYY(inst)
+        my_solver = solver_340850_335723(inst)
 
         print(f"--- Test Sorting {dataset_name} ---")
         my_solver.solve()
