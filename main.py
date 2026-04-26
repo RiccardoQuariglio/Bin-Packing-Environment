@@ -7,6 +7,6 @@ if __name__ == '__main__':
 
     inst = Instance(dataset_name)
 
-    solver = solver_XXXXXX_YYYYYY(inst)
+    solver = solver_340850_335723(inst)
 
     solver.solve()

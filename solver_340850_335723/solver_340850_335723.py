@@ -33,20 +33,24 @@ class solver_340850_335723(AbstractSolver):
 
 
 
-#test per vedere se la memorizzazione funziona W
+#test per vedere se il sorting funziona
 if __name__ == "__main__":
+    #Non cambiare
     from instances import Instance
     import os
     import sys
 
     os.chdir(os.path.dirname(os.getcwd()))
     sys.path.append(os.getcwd())
-    dataset_name = 'Dataset0'
+    #fino a qua
+    dataset_name = 'Dataset0'    #qua puoi cambiare il dataset
+    
 
     try:
+        #Non cambiare
         inst = Instance(dataset_name)
-
         my_solver = solver_340850_335723(inst)
+        #fino a qua
 
         print(f"--- Test Sorting {dataset_name} ---")
         my_solver.solve()
