@@ -1,5 +1,5 @@
 from instances import Instance
-from solver_XXXXXX_YYYYYY import solver_XXXXXX_YYYYYY
+from solver_340850_335723 import solver_340850_335723
 
 if __name__ == '__main__':
 
