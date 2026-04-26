@@ -65,3 +65,12 @@ class AdditionalScript():
             reverse=True
         )
         return sorted_list
+
+    #Funzioni per impaccamento: 1) Best Fit Decreasing e 2) Bottom Left Fill
+    @staticmethod
+    def _BFD_packing():
+        pass
+
+    @staticmethod
+    def _BLF_packing():
+        pass

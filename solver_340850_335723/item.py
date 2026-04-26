@@ -12,6 +12,14 @@ class Item:
         #Gestione delle rotazioni
         self.curr_width, self.curr_depth, self.curr_height = width, depth, height
 
+        #Posizione all'interno del container
+        self.x_position = None
+        self.y_position = None
+        self.z_position = None
+
+        #Indicatore per vedere se è stato impaccato oppure no
+        self.placed = False
+
     #Funzione che modifica i valori 3D in base alla rotazione effettuata
     # (lista presa dal file results_checker)
     def set_rotation(self, rotation_number):
