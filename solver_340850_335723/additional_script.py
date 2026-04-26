@@ -6,9 +6,8 @@ import random
     Ordine delle funzioni nel file additional_script:
     _load_items(df_items) --> memorizza gli items in una lista non ordinata
     _load_containers(df_vehicles) --> memorizza i containers in una lista non ordinata
-    _sort_items_by_width_increasing(items_list) --> ordina gli items di una lista per width crescente
-    _sort_items_by_volume_decreasing(items_list) --> ordina gli items di una lista per volume decrescente
-    
+    _sorted_items_by_a_h_w(items) --> ordina gli items di una lista per area e altezza decrescente
+    _stochastic_sorted_items(items, randomness=0.4) --> ordina gli items di una lista con fattore di randomicità    
     
     """
 
@@ -75,7 +74,7 @@ class AdditionalScript():
         return sorted_list
 
     @staticmethod
-    def get_stochastic_sorted_items(items, randomness=0.4):
+    def _stochastic_sorted_items(items, randomness=0.4):
         #Ordina gli item per altezza decrescente con un fattore di disturbo casuale.
 
         heights = [item.height for item in items]
