@@ -28,6 +28,8 @@ class solver_340850_335723(AbstractSolver):
         self.items_by_volume_decreasing = self.additional_script._sort_items_by_volume_decreasing(self.items)
 
 
+
+
         
         self.write_solution_to_file()
 
