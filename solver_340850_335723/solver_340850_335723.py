@@ -8,9 +8,11 @@ class solver_340850_335723(AbstractSolver):
     def __init__(self, inst):
         #Inizializzazione delle variabili che andrò a usare nel solver
         super().__init__(inst)
-        self.items = []
-        self.containers = []
+        self.items_list = []
+        self.containers_set = set()
         self.additional_script = AdditionalScript()
+        self.containers_utilizzati = []
+        self.extreme_points = []
 
     # Metodo solve() costituito da più parti:
     # 1) Memorizzazione degli items e dei containers del dataset in questione in liste
@@ -19,13 +21,55 @@ class solver_340850_335723(AbstractSolver):
     def solve(self):
 
         # 1.0) Memorizzazione Items
-        self.items = self.additional_script._load_items(self.inst.df_items)
+        self.items_list = self.additional_script.loadItems(self.inst.df_items)
         # 1.1) Memorizzazione Containers
-        self.containers = self.additional_script._load_containers(self.inst.df_vehicles)
+        self.containers_set = self.additional_script.loadContainers(self.inst.df_vehicles)
 
         # 2) Sorting degli items
-        self.items_by_h_a_w = self.additional_script._sorted_items_h_a_w(self.items)
-        self.items_by_volume_decreasing = self.additional_script._sort_items_by_volume_decreasing(self.items)
+        self.items_by_a_h_w = self.additional_script.sortedItemsByAHW(self.items_list)
+
+        # 3) Impaccamento
+        #Scelta primo container e aggiunta alla lista di containers utilizzati
+        first_container = self.additional_script.chooseFirstContainer(self.containers_set)
+        self.containers_utilizzati.append(first_container)
+
+        for item in self.items_list:
+            item_to_pack = self.items_list[0]
+            bool_placed = False
+            containers_feasible = []
+            for container in self.containers_utilizzati:
+                if self.additional_script.isFeasible(item_to_pack, container):
+                    self.additional_script.computeMerit(container)
+                    containers_feasible.append(container)
+
+            if containers_feasible:    #"Se lista" <==> "Se la lista non è vuota"
+                best_container = self.additional_script.containerBestMerit(containers_feasible)
+                self.additional_script.packItemIntoContainer(item_to_pack, best_container)
+                bool_placed = True
+                item_placed = self.items_list.pop(0)
+
+            if not bool_placed:    #"Se bool_placed == False"
+                new_container = self.additional_script.openNewContainer(self.containers_set)
+                self.containers_utilizzati.append(new_container)
+                if self.additional_script.isFeasible(item_to_pack, new_container):
+                    self.additional_script.packItemIntoContainer(item_to_pack, new_container)
+                    bool_placed = True
+                    item_placed = self.items_list.pop(0)
+
+            if not bool_placed:
+                print(f"Il container {item_to_pack.id} non è stato posizionato neanche dopo l'apertura di un nuovo container.")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

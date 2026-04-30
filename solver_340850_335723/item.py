@@ -16,9 +16,7 @@ class Item:
         self.x_position = None
         self.y_position = None
         self.z_position = None
-
-        #Indicatore per vedere se è stato impaccato oppure no
-        self.placed = False
+        self.position = (self.x_position, self.y_position, self.z_position)
 
     #Funzione che modifica i valori 3D in base alla rotazione effettuata
     # (lista presa dal file results_checker)

@@ -7,14 +7,18 @@ class Container:
         self.width = width
         self.depth = depth
         self.height = height
+        self.volume = width * depth * height
         self.max_weight = max_weight
         self.cost = cost
         self.max_value = max_value
         self.gravity_strength = gravity
 
+        #Parametri utilizzati per gestire l'impaccamento
+        self.remaining_value = max_value
         self.remaining_weight = max_weight
         self.items_placed = []  # Lista di oggetti Item già posizionati
         self.extreme_points = [(0, 0, 0)]  # Inizializzazione EP
+        self.merit = None
 
     # Definizione _toString che serve per testare il codice
     def __str__(self):

@@ -1,0 +1,47 @@
+(#Partiamo da una lista(queue = coda) di items già sortati e inizializziamo una lista containers_aperti vuota)
+coda_items = queue[]
+containers_aperti = []
+
+(#Scelta primo container e inizializzazione lista containers_aperti)
+for container in containers:
+    scegliere primo_container_aperto = ?
+    containers_aperti.add(primo_container_aperto)
+
+(#Inizio impaccamento)
+for item in coda_items:
+
+    for container in containers_aperti:
+    bool_placed = False
+
+        if item.ci_può_stare(spazio_fattibile, peso,
+                        vincolo_superficie, vincolo_costo) :
+            - calcolare funzione_di_opportunità -->(min volume rimasto)
+            - aggiungere il container a una lista_fattibili
+
+        (#Se tra i containers già aperti almeno uno è disponibile, scegliere dove metterlo)
+        if lista_fattibili ! vuota:
+            - inserire item nel container che massimizza la funzione_di_opportunità
+              (coda_items.pop[0] --> togli l'item dalla coda)
+            - bool_placed = True
+            - aggiornare container (valore_cumulato, peso_cumulato, spazio)
+            - break (uscire dal ciclo dei containers_aperti)
+
+    (#Se invece non ce n'era nessuno disponibile, aprirne un altro)
+    if bool_placed == False:
+        aprire nuovo container --> Come?
+        if item.ci_può_stare(spazio_fattibile, peso,
+                        vincolo_superficie, vincolo_costo) :
+            - inserire item nel container_appena_aperto
+              (e aggiornare bool_placed = True)
+            - aggiornare container (valore_cumulato, peso_cumulato, spazio)
+
+
+
+#Funzioni da implementare:
+1) Come scegliere il primo container?
+   (--> miglior rapporto volume costo, oppure in relazione al volume totale degli items che si devono mettere, ...)
+2) Come scegliere i containers successivi? (analogo al primo)
+3) Come definire la funzione opportunità, cioè dati almeno 2 containers disponiibili dove mettere l'item,
+   quale criterio si usa per scegliere dove metterlo?
+   (--> minimo volume che lascia disponibile all'interno del container, ...)
+4) Verificare la fattibilità che un item ci stia all'interno di un container
