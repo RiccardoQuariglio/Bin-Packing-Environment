@@ -14,9 +14,16 @@ class solver_340850_335723(AbstractSolver):
         self.containers_utilizzati = []
         self.extreme_points = []
 
+    """
     # Metodo solve() costituito da più parti:
     # 1) Memorizzazione degli items e dei containers del dataset in questione in liste
     # 2) Sorting degli items secondo uno specifico criterio
+    # 3) Scelta del primo container: da qui in avanti c'è il vero impaccamento
+    # 4) Calcolo soluzioni fattibili per ogni container, ciclando sui containers
+    # 5.0 - 5.1) Si sceglie la soluzione migliore (se non ce n'erano, si apre un nuovo container e si piazza là)
+    #            e si impacca finalmente l'item, andando ad aggiornare lista_items, container coinvolto.
+    """
+
 
     def solve(self):
 
@@ -28,31 +35,42 @@ class solver_340850_335723(AbstractSolver):
         # 2) Sorting degli items
         self.items_by_a_h_w = self.additional_script.sortedItemsByAHW(self.items_list)
 
-        # 3) Impaccamento
-        #Scelta primo container e aggiunta alla lista di containers utilizzati
+        # 3) Scelta primo container e aggiunta alla lista di containers utilizzati
         first_container = self.additional_script.chooseFirstContainer(self.containers_set)
+        first_container.idx = 0
+        counter_containers = 1
         self.containers_utilizzati.append(first_container)
 
-        for item in self.items_list:
+        #4) Per ogni container, vedere se ci sono soluzioni fattibili, e aggiungerli alla lista totale (delle soluz fattibili)
+        while self.items_list:
             item_to_pack = self.items_list[0]
             bool_placed = False
-            containers_feasible = []
-            for container in self.containers_utilizzati:
-                if self.additional_script.isFeasible(item_to_pack, container):
-                    self.additional_script.computeMerit(container)
-                    containers_feasible.append(container)
+            all_feasible_solutions = []
+            for container in self.containers_utilizzati:   #Sicuramente non è vuoto
+                container_feasible_solutions = self.additional_script.isFeasible(container, item_to_pack)
+                if container_feasible_solutions is not None:
+                    all_feasible_solutions.extend(container_feasible_solutions)
 
-            if containers_feasible:    #"Se lista" <==> "Se la lista non è vuota"
-                best_container = self.additional_script.containerBestMerit(containers_feasible)
-                self.additional_script.packItemIntoContainer(item_to_pack, best_container)
+            # 5.0) Se ci sono soluzioni fattibli, trovare la migliore con la funzione di merito
+            #      e impaccare l'item nel container
+            if all_feasible_solutions:    #"Se lista" <==> "Se la lista non è vuota"
                 bool_placed = True
+                best_solution = max(all_feasible_solutions,  key=lambda x: x.merit)
+                self.additional_script.packItemIntoContainer(best_solution)
                 item_placed = self.items_list.pop(0)
 
+
+            # 5.1) Se non c'è nessuna soluzione fattibile per nessun container, se ne apre uno nuovo e lo si
+            #      impacca là
             if not bool_placed:    #"Se bool_placed == False"
                 new_container = self.additional_script.openNewContainer(self.containers_set)
+                new_container.idx = counter_containers
+                counter_containers += 1
                 self.containers_utilizzati.append(new_container)
-                if self.additional_script.isFeasible(item_to_pack, new_container):
-                    self.additional_script.packItemIntoContainer(item_to_pack, new_container)
+                feasible_solutions = self.additional_script.isFeasible(new_container, item_to_pack)
+                if feasible_solutions is not None:
+                    best_solution = max(feasible_solutions, key=lambda x: x.merit)
+                    self.additional_script.packItemIntoContainer(best_solution)
                     bool_placed = True
                     item_placed = self.items_list.pop(0)
 
