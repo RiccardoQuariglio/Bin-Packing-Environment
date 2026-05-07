@@ -10,7 +10,10 @@ class Item:
         self.allowed_rotations = [int(ar) for ar in str(allowed_rotations)]
 
         #Gestione delle rotazioni
-        self.curr_width, self.curr_depth, self.curr_height = width, depth, height
+        self.curr_width = width
+        self.curr_depth = depth
+        self.curr_height = height
+        self.curr_rotation_number = self.allowed_rotations[0]
 
         #Posizione all'interno del container
         self.x_position = None
@@ -31,6 +34,7 @@ class Item:
             (h, w, d),
         ]
         self.curr_width, self.curr_depth, self.curr_height = rotations[rotation_number]
+        self.curr_rotation_number = rotation_number
 
     #Definizione _toString che serve per testare il codice
     def __str__(self):
