@@ -78,20 +78,14 @@ if __name__ == '__main__':
 
             x, y, z = row["x_origin"], row["y_origin"], row["z_origin"]
 
-            """
+
             box = {
                 "id": item_id,
                 "x1": x, "y1": y, "z1": z,
                 "x2": x + d, "y2": y + w, "z2": z + h,
                 "base_area": w * d
             }
-            """
-            box = {
-                "id": item_id,
-                "x1": x, "y1": y, "z1": z,
-                "x2": x + w, "y2": y + d, "z2": z + h,
-                "base_area": w * d
-            }
+
 
             # -------------------------
             # Bounds
