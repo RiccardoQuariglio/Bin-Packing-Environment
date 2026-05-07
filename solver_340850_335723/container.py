@@ -18,7 +18,6 @@ class Container:
         self.remaining_weight = max_weight
         self.items_placed = []  # Lista di oggetti Item già posizionati
         self.extreme_points = [(0, 0, 0)]  # Inizializzazione EP
-        self.merit = None
 
     # Definizione _toString che serve per testare il codice
     def __str__(self):
