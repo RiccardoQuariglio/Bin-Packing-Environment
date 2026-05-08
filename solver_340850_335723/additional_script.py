@@ -206,6 +206,9 @@ class AdditionalScript:
         container.remaining_value -= item.value
         container.items_placed.append(item)
 
+
+        """??? ALGORITMO 1
+        E giusto togliere l'ep della soluzione ottenuta dalla lista di ep del container"""
         if solution.ep in container.extreme_points:
             container.extreme_points.remove(solution.ep)
 

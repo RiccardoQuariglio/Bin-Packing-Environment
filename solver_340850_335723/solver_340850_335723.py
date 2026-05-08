@@ -12,7 +12,6 @@ class solver_340850_335723(AbstractSolver):
         self.containers_set = set()
         self.additional_script = AdditionalScript()
         self.containers_utilizzati = []
-        self.extreme_points = []
 
     """
     # Metodo solve() costituito da più parti:
@@ -65,9 +64,6 @@ class solver_340850_335723(AbstractSolver):
             if all_feasible_solutions:    #"Se lista" <==> "Se la lista non è vuota"
                 bool_placed = True
                 best_solution = max(all_feasible_solutions,  key=lambda x: x.merit)
-                best_solution.item.x_position = best_solution.ep[0]
-                best_solution.item.y_position = best_solution.ep[1]
-                best_solution.item.z_position = best_solution.ep[2]
                 self.additional_script.packItemIntoContainer(best_solution)
                 item_placed = self.items_list.pop(0)
 
