@@ -43,15 +43,15 @@ class Item:
 
 
     #Funzione che verifica le sovrapposizioni tra gli item
-    def overlap_x(self, other: Item):
+    def overlap_x(self, other):
         return (max(self.x_position, other.x_position) <
                 min(self.x_position + self.curr_depth, other.x_position + other.curr_depth))
 
-    def overlap_y(self, other: Item):
+    def overlap_y(self, other):
         return (max(self.y_position, other.y_position) <
                 min(self.y_position + self.curr_width, other.y_position + other.curr_width))
 
-    def overlap_z(self, other: Item):
+    def overlap_z(self, other):
         return (max(self.z_position, other.z_position) <
                 min(self.z_position + self.curr_height, other.z_position + other.curr_height))
 
