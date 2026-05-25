@@ -1,7 +1,13 @@
-from abstract_solver import AbstractSolver
-from additional_script import AdditionalScript
-from item import Item
-from container import Container
+try:
+    from .abstract_solver import AbstractSolver
+    from .additional_script import AdditionalScript
+    from .item import Item
+    from .container import Container
+except ImportError:
+    from abstract_solver import AbstractSolver
+    from additional_script import AdditionalScript
+    from item import Item
+    from container import Container
 
 class solver_340850_335723(AbstractSolver):
 
@@ -37,8 +43,8 @@ class solver_340850_335723(AbstractSolver):
               f"curr_width, curr_depth, curr_heigth: {self.items_list[0].curr_width}, {self.items_list[0].curr_depth}, {self.items_list[0].curr_height}\n"
               f"============================================================\n")
 
-        # 2) Sorting degli items
-        #self.items_by_a_h_w = self.additional_script.sortedItemsByAHW(self.items_list)
+        # 2) Sorting degli items (copia ordinata, la lista originale rimane invariata se serve altrove)
+        self.items_list = self.additional_script.sortedItemsByAHW(self.items_list)
 
         # 3) Scelta primo container e aggiunta alla lista di containers utilizzati
         first_container = self.additional_script.chooseFirstContainer(self.containers_set)
@@ -112,7 +118,11 @@ class solver_340850_335723(AbstractSolver):
                           f"{best_solution.container.idx} in posizione {best_solution.ep}.\n")
 
             if not bool_placed:
-                print(f"Il container {item_to_pack.id} non è stato posizionato neanche dopo l'apertura di un nuovo container.")
+                # Per evitare loop infinito, rimuoviamo comunque l'item dalla lista,
+                # registrando che non è stato possibile piazzarlo (la soluzione sarà infeasible per items mancanti,
+                # ma il solver termina invece di bloccarsi).
+                print(f"WARNING: l'item {item_to_pack.id} non è stato posizionato neanche dopo l'apertura di un nuovo container.")
+                self.items_list.pop(0)
 
 
         

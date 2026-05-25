@@ -1,7 +1,12 @@
-from item import Item
-from container import Container
 import random
-from singleSolutionFeasible import SingleSolutionFeasible
+try:
+    from .item import Item
+    from .container import Container
+    from .singleSolutionFeasible import SingleSolutionFeasible
+except ImportError:
+    from item import Item
+    from container import Container
+    from singleSolutionFeasible import SingleSolutionFeasible
 
 """
     1) Ordine delle funzioni nel file additional_script:
@@ -125,19 +130,30 @@ class AdditionalScript:
 
     @staticmethod
     def isFeasible(item_to_pack: Item, container: Container):
-        #Verifica peso e valore item
-        if item_to_pack.weight > container.remaining_weight and item_to_pack.value > container.remaining_value:
+        #Verifica peso e valore item (basta uno dei due a sforare per essere infeasible)
+        if item_to_pack.weight > container.remaining_weight:
+            return None
+        if item_to_pack.value > container.remaining_value:
             return None
 
         feasible_solutions = []
-        for ep in container.extreme_points:
-            (ex, ey, ez) = ep
-            (item_to_pack.x_position, item_to_pack.y_position, item_to_pack.z_position) = (ex, ey, ez)
 
-            #Verifica limiti container
-            if (ex + item_to_pack.curr_width <= container.width and
-                ey + item_to_pack.curr_depth <= container.depth and
-                    ez + item_to_pack.curr_height <= container.height):
+        # Salvo lo stato corrente per ripristinarlo a fine funzione (l'item non è ancora piazzato)
+        saved_rotation = item_to_pack.curr_rotation_number
+
+        # Itero su tutte le rotazioni ammesse per questo item
+        for rot_idx in item_to_pack.allowed_rotations:
+            item_to_pack.set_rotation(rot_idx)
+
+            for ep in container.extreme_points:
+                (ex, ey, ez) = ep
+                (item_to_pack.x_position, item_to_pack.y_position, item_to_pack.z_position) = (ex, ey, ez)
+
+                #Verifica limiti container (x->depth, y->width, z->height)
+                if not (ex + item_to_pack.curr_depth <= container.depth and
+                        ey + item_to_pack.curr_width <= container.width and
+                        ez + item_to_pack.curr_height <= container.height):
+                    continue
 
                 #Verifica sovrapposizioni con altri oggetti nel container
                 overlapping = False
@@ -145,44 +161,36 @@ class AdditionalScript:
                     if item_to_pack.boxes_overlap(box_placed):
                         overlapping = True
                         break
+                if overlapping:
+                    continue
 
-                #Se non c'è sovrapposizione per quell'ep, verifica il Gravity Strength e, se superato anch'esso,
-                #generea l'oggetto Feasible Solution
-                if not overlapping:
-                    if ez == 0:
-                        # Se tocca il pavimento, è sempre fattibile
-                        rotation = item_to_pack.curr_rotation_number
-                        feasible_solution = SingleSolutionFeasible(
-                            container,
-                            item_to_pack,
-                            item_to_pack.curr_width,
-                            item_to_pack.curr_depth,
-                            item_to_pack.curr_height,
-                            ep,
-                            rotation)
-                        feasible_solution.computeMerit()
-                        feasible_solutions.append(feasible_solution)
-                    else:
-                        current_support_area = 0
-                        min_support_area = item_to_pack.curr_width * item_to_pack.curr_depth * (container.gravity_strength/100)
-                        for box_placed in container.items_placed:
-                            current_support_area += item_to_pack.get_support_area(box_placed)
+                #Verifica Gravity Strength
+                if ez == 0:
+                    pass  # tocca il pavimento, sempre supportato
+                else:
+                    current_support_area = 0.0
+                    min_support_area = (item_to_pack.curr_width * item_to_pack.curr_depth *
+                                        (container.gravity_strength / 100.0))
+                    for box_placed in container.items_placed:
+                        current_support_area += item_to_pack.get_support_area(box_placed)
+                    if current_support_area + 1e-9 < min_support_area:
+                        continue
 
-                        if current_support_area >= min_support_area:
-                            rotation = item_to_pack.curr_rotation_number
-                            feasible_solution = SingleSolutionFeasible(
-                                container,
-                                item_to_pack,
-                                item_width=item_to_pack.curr_width,
-                                item_depth=item_to_pack.curr_depth,
-                                item_height=item_to_pack.curr_height,
-                                ep=ep,
-                                rotation=rotation)
-                            feasible_solution.computeMerit()
-                            feasible_solutions.append(feasible_solution)
+                feasible_solution = SingleSolutionFeasible(
+                    container,
+                    item_to_pack,
+                    item_width=item_to_pack.curr_width,
+                    item_depth=item_to_pack.curr_depth,
+                    item_height=item_to_pack.curr_height,
+                    ep=ep,
+                    rotation=item_to_pack.curr_rotation_number)
+                feasible_solution.computeMerit()
+                feasible_solutions.append(feasible_solution)
 
-        #Alla fine vede: se non c'è nessun ep fattibile, ritorna False, altrimenti ritorna True e la lista di ep fattibili
+        # Ripristino lo stato dell'item (non è ancora piazzato qui)
+        item_to_pack.set_rotation(saved_rotation)
         (item_to_pack.x_position, item_to_pack.y_position, item_to_pack.z_position) = (None, None, None)
+
         if not feasible_solutions:
             return None
         return feasible_solutions
@@ -230,28 +238,28 @@ class AdditionalScript:
 
             # Esempio Direzione YX: proiettiamo x_spigolo verso Y
             if AdditionalScript.canTakeProjection(item, other, "YX"):
-                potential_y = other.y_position + other.curr_depth
+                potential_y = other.y_position + other.curr_width
                 if potential_y > max_bounds["YX"]:
                     max_bounds["YX"] = potential_y
-                    new_ex_points["YX"] = (item.x_position + item.curr_width, potential_y, item.z_position)
+                    new_ex_points["YX"] = (item.x_position + item.curr_depth, potential_y, item.z_position)
 
             # 1. YZ: Proiettiamo lo spigolo z (zk+hk) verso Y, cerchiamo supporto su faccia Z
             if AdditionalScript.canTakeProjection(item, other, "YZ"):
-                potential_y = other.y_position + other.curr_depth
+                potential_y = other.y_position + other.curr_width
                 if potential_y > max_bounds["YZ"]:
                     max_bounds["YZ"] = potential_y
                     new_ex_points["YZ"] = (item.x_position, potential_y, item.z_position + item.curr_height)
 
             # Esempio Direzione XY: proiettiamo y_spigolo verso X
             if AdditionalScript.canTakeProjection(item, other, "XY"):
-                potential_x = other.x_position + other.curr_width
+                potential_x = other.x_position + other.curr_depth
                 if potential_x > max_bounds["XY"]:
                     max_bounds["XY"] = potential_x
-                    new_ex_points["XY"] = (potential_x, item.y_position + item.curr_depth, item.z_position)
+                    new_ex_points["XY"] = (potential_x, item.y_position + item.curr_width, item.z_position)
 
             # 3. XZ: Proiettiamo lo spigolo z (zk+hk) verso X, cerchiamo supporto su faccia Z
             if AdditionalScript.canTakeProjection(item, other, "XZ"):
-                potential_x = other.x_position + other.curr_width
+                potential_x = other.x_position + other.curr_depth
                 if potential_x > max_bounds["XZ"]:
                     max_bounds["XZ"] = potential_x
                     new_ex_points["XZ"] = (potential_x, item.y_position, item.z_position + item.curr_height)
@@ -262,19 +270,19 @@ class AdditionalScript:
                 potential_z = other.z_position + other.curr_height
                 if potential_z > max_bounds["ZX"]:
                     max_bounds["ZX"] = potential_z
-                    new_ex_points["ZX"] = (item.x_position + item.curr_width, item.y_position, potential_z)
+                    new_ex_points["ZX"] = (item.x_position + item.curr_depth, item.y_position, potential_z)
 
             # 5. ZY: Proiettiamo lo spigolo y (yk+dk) verso Z, cerchiamo supporto su faccia Y
             if AdditionalScript.canTakeProjection(item, other, "ZY"):
                 potential_z = other.z_position + other.curr_height
                 if potential_z > max_bounds["ZY"]:
                     max_bounds["ZY"] = potential_z
-                    new_ex_points["ZY"] = (item.x_position, item.y_position + item.curr_depth, potential_z)
+                    new_ex_points["ZY"] = (item.x_position, item.y_position + item.curr_width, potential_z)
 
             # Aggiungiamo i 3 vertici diretti (sempre generati come base)[cite: 2]
         base_pts = [
-            (item.x_position + item.curr_width, item.y_position, item.z_position),
-            (item.x_position, item.y_position + item.curr_depth, item.z_position),
+            (item.x_position + item.curr_depth, item.y_position, item.z_position),
+            (item.x_position, item.y_position + item.curr_width, item.z_position),
             (item.x_position, item.y_position, item.z_position + item.curr_height)
         ]
 
@@ -282,7 +290,7 @@ class AdditionalScript:
         for p in (list(new_ex_points.values()) + base_pts):
             if p not in container.extreme_points and p != (None, None, None):
                 # Verifichiamo i limiti fisici del bin
-                if p[0] <= container.width and p[1] <= container.depth and p[2] <= container.height:
+                if p[0] <= container.depth and p[1] <= container.width and p[2] <= container.height:
                     container.extreme_points.append(p)
 
         # 4. Ordinamento EP (z, y, x non decrescente)
@@ -308,27 +316,27 @@ class AdditionalScript:
             # Punto (x_new+w_new, y_new, z_new) proiettato in Y, cerchiamo supporto su X
             # Requisito: Il punto deve essere nel range X e Z dell'other
             # e trovarsi 'davanti' (y maggiore) rispetto a other
-            return (x_other <= x_new + w_new < x_other + w_other) and (z_other <= z_new < z_other + h_other) and (y_other + d_other <= y_new)
+            return (x_other <= x_new + d_new < x_other + d_other) and (z_other <= z_new < z_other + h_other) and (y_other + w_other <= y_new)
 
         elif direction == "YZ":
             # Punto (x_new, y_new+d_new, z_new) proiettato in Y, cerchiamo supporto su Z
-            return (x_other <= x_new < x_other + w_other) and (y_other + d_other <= y_new) and (z_other <= z_new < z_other + h_other)  # Semplificaz_otherone pratica
+            return (x_other <= x_new < x_other + d_other) and (y_other + w_other <= y_new) and (z_other <= z_new < z_other + h_other)  # Semplificaz_otherone pratica
 
         elif direction == "XY":
             # Punto (x_new, y_new+d_new, z_new) proiettato in X, cerchiamo supporto su Y
-            return (y_other <= y_new + d_new < y_other + d_other) and (z_other <= z_new < z_other + h_other) and (x_other + w_other <= x_new)
+            return (y_other <= y_new + w_new < y_other + w_other) and (z_other <= z_new < z_other + h_other) and (x_other + d_other <= x_new)
 
         elif direction == "XZ":
             # Punto (x_new, y_new, z_new+h_new) proiettato in X, cerchiamo supporto su Z
-            return (y_other <= y_new < y_other + d_other) and (z_other <= z_new + h_new < z_other + h_other) and (x_other + w_other <= x_new)
+            return (y_other <= y_new < y_other + w_other) and (z_other <= z_new + h_new < z_other + h_other) and (x_other + d_other <= x_new)
 
         elif direction == "ZX":
             # Punto (x_new+w_new, y_new, z_new) proiettato in Z, cerchiamo supporto su X
-            return (x_other <= x_new + w_new < x_other + w_other) and (y_other <= y_new < y_other + d_other) and (z_other + h_other <= z_new)
+            return (x_other <= x_new + d_new < x_other + d_other) and (y_other <= y_new < y_other + w_other) and (z_other + h_other <= z_new)
 
         elif direction == "ZY":
             # Punto (x_new, y_new+d_new, z_new) proiettato in Z, cerchiamo supporto su Y
-            return (y_other <= y_new + d_new < y_other + d_other) and (x_other <= x_new < x_other + w_other) and (z_other + h_other <= z_new)
+            return (y_other <= y_new + w_new < y_other + w_other) and (x_other <= x_new < x_other + d_other) and (z_other + h_other <= z_new)
 
         return False
 

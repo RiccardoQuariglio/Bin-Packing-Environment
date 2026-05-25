@@ -45,15 +45,15 @@ class Item:
     #Funzione che verifica le sovrapposizioni tra gli item
     def overlap_x(self, other: Item):
         return (max(self.x_position, other.x_position) <
-                min(self.x_position + self.curr_width, other.x_position + self.curr_width))
+                min(self.x_position + self.curr_depth, other.x_position + other.curr_depth))
 
     def overlap_y(self, other: Item):
         return (max(self.y_position, other.y_position) <
-                min(self.y_position + self.curr_depth, other.y_position + self.curr_depth))
+                min(self.y_position + self.curr_width, other.y_position + other.curr_width))
 
     def overlap_z(self, other: Item):
         return (max(self.z_position, other.z_position) <
-                min(self.z_position + self.curr_height, other.z_position + self.curr_height))
+                min(self.z_position + self.curr_height, other.z_position + other.curr_height))
 
     def boxes_overlap(self, other):
         return (
@@ -67,9 +67,9 @@ class Item:
             return 0.0
 
         # Calcoliamo l'intersezione sugli assi X e Y
-        inter_x = max(0, min(self.x_position + self.curr_width, other.x_position + other.curr_width) -
+        inter_x = max(0, min(self.x_position + self.curr_depth, other.x_position + other.curr_depth) -
                       max(self.x_position, other.x_position))
-        inter_y = max(0, min(self.y_position + self.curr_depth, other.y_position + other.curr_depth) -
+        inter_y = max(0, min(self.y_position + self.curr_width, other.y_position + other.curr_width) -
                       max(self.y_position, other.y_position))
 
         return inter_x * inter_y

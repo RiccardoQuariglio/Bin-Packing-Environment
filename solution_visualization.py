@@ -7,9 +7,9 @@ from instances import Instance
 
 if __name__ == '__main__':
     
-    vehicle_to_visualize = 0
+    vehicle_to_visualize = 1
 
-    dataset_name = 'Dataset0'
+    dataset_name = 'DatasetH'
     solver_name = 'solver_340850_335723'
     inst = Instance(dataset_name)
 

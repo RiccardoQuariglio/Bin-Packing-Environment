@@ -1,0 +1,37 @@
+Sto facendo un progetto di ricerca operativa in cui devo implementare uyn'euristica per un problema di
+3D-Packing.
+Partendo dalle istruzioni del progetto presenti nel file README e dalle informazioni del paper
+extremePoints_come_funzionano.pdf (pagine 1-13 e 29-32) /riguardo all'algoritmo
+degli Extreme-Points (che devo implementare nel mio codice), ti descrivo come voglio lavorare e dopo
+mi consigli cosa fare.
+
+Il modo il cui voglio svolgere il progetto è il seguente:
+Parto col memorizzare gli items e i container
+Dopodichè devo scegliere il primo container da aprire, secondo il criterio della funzione chbooseFIrstContainer() e
+sortare gli items (la lista sortata deve essere una copia, sortata, della lista iniziale, cioè non posso
+perdere la lista iniziale.)
+Poi inizia la fase di inserimento degli items nei container, a partire dal primo: la logica è la seguente, vado a
+verificare:
+1) Per ogni container già aperto
+2) Per ogni posizione in cui posso inserire l'item (cioè la lista di extreme points del container)
+3) Per ogni rotazione possibile dell'item
+se la soluzione è fattibile, e se così, vado a calcolare una funzione di merito che mi dica quanto è buona
+questa soluzione, memorizzando i dettagli in on oggetto di tipo SingleSolutionFeasible.
+-->Attenzione: un punto critico è gestire la posizione e la rotazione dell'item, che cambia ogni volta che calcolo
+una soluzione diversa, ma che devo memorizzare per le SingleSolutionFeasible.
+
+Se Una soluzione è fattibile, la aggiungo a una lista di soluzioni fattibili e scelgo la migliore, sennò devo aprire
+un nuovo container.
+
+Il problema più grosso sta nell'inserire l'item in un container e aggiornare il container, mi riferisco alle funzioni
+packItemIntoContainer() e canTakeProjection(), che stanno alla base dell'aggiornamento della
+lista degli extreme points. Io ho provato a implementare l'algoritmo descritto nel paper ma quando runno il
+file results_checker.py la soluzione risulta infeasible.
+
+Punti deboli:
+1) Aggiornamento lista extreme-points del container
+2) Coordinate x,y: all'inizio avevo esso x=width e y=depth, ma era sbagliato quindi ho provato a correggere il
+codice, ma può essere che sia rimasto qualche errore residuo.
+3) Ordine ed efficienza del codice (meno importante comunque degli altri 2).
+4) Scelta dei container, che sono poco robusti alle eccezioni che si possono presentare.
+
