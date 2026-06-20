@@ -36,12 +36,7 @@ class solver_340850_335723(AbstractSolver):
         self.items_list = self.additional_script.loadItems(self.inst.df_items)
         # 1.1) Memorizzazione Containers
         self.containers_set = self.additional_script.loadContainers(self.inst.df_vehicles)
-        print(f"Items memorizzati correttamente ({len(self.items_list)} items in totale);\n"
-              f"containers memorizzati correttamente ({len(self.containers_set)} containers in totale);\n"
-              f"Primo item della lista:\n"
-              f"width, depth, height: {self.items_list[0].width}, {self.items_list[0].depth}, {self.items_list[0].height}\n"
-              f"curr_width, curr_depth, curr_heigth: {self.items_list[0].curr_width}, {self.items_list[0].curr_depth}, {self.items_list[0].curr_height}\n"
-              f"============================================================\n")
+        
 
         # 2) Sorting degli items (copia ordinata, la lista originale rimane invariata se serve altrove)
         self.items_list = self.additional_script.sortedItemsByAHW(self.items_list)
@@ -51,8 +46,7 @@ class solver_340850_335723(AbstractSolver):
         first_container.idx = self.idx_vehicle
         self.idx_vehicle += 1
         self.containers_utilizzati.append(first_container)
-        print(f"Primo containers scelto correttamente (idx: {first_container.idx})\n"
-              f"===================================================\n")
+        
 
 
         #4) Per ogni container, vedere se ci sono soluzioni fattibili, e aggiungerli alla lista totale (delle soluz fattibili)
@@ -83,15 +77,14 @@ class solver_340850_335723(AbstractSolver):
                 # Per ora mettiamo 0 come orientamento di default se non lo hai salvato
                 self.sol['orient'].append(best_solution.item_rotation)
 
-                print(f"L'item {best_solution.item.id} è stato posizionato nel container "
-                      f"{best_solution.container.idx} in posizione {best_solution.ep}.\n")
+                
 
 
             # 5.1) Se non c'è nessuna soluzione fattibile per nessun container, se ne apre uno nuovo e lo si
             #      impacca là
             if not bool_placed:    #"Se bool_placed == False"
                 new_container = self.additional_script.openNewContainer(self.containers_set)
-                print(f"E' stato aperto un nuovo container con idx: {new_container.idx}")
+                
                 new_container.idx = self.idx_vehicle
                 self.idx_vehicle += 1
                 self.containers_utilizzati.append(new_container)
@@ -114,8 +107,7 @@ class solver_340850_335723(AbstractSolver):
                     # Per ora mettiamo 0 come orientamento di default se non lo hai salvato
                     self.sol['orient'].append(best_solution.item_rotation)
 
-                    print(f"L'item {best_solution.item.id} è stato posizionato nel container "
-                          f"{best_solution.container.idx} in posizione {best_solution.ep}.\n")
+                    
 
             if not bool_placed:
                 # Per evitare loop infinito, rimuoviamo comunque l'item dalla lista,
