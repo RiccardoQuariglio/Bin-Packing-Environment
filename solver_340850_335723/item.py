@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class Item:
     def __init__(self, item_id, width, depth, height, weight, value, allowed_rotations):
         #Definizione degli attributi principali attraverso il costruttore
@@ -5,6 +8,7 @@ class Item:
         self.width = width
         self.depth = depth
         self.height = height
+        self.volume = width * depth * height
         self.weight = weight
         self.value = value
         self.allowed_rotations = [int(ar) for ar in str(allowed_rotations)]
@@ -19,11 +23,10 @@ class Item:
         self.x_position = None
         self.y_position = None
         self.z_position = None
-        self.position = (self.x_position, self.y_position, self.z_position)
 
     #Funzione che modifica i valori 3D in base alla rotazione effettuata
     # (lista presa dal file results_checker)
-    def set_rotation(self, rotation_number):
+    def setRotation(self, rotation_number):
         w, d, h = self.width, self.depth, self.height
         rotations = [
             (w, d, h),
@@ -43,25 +46,25 @@ class Item:
 
 
     #Funzione che verifica le sovrapposizioni tra gli item
-    def overlap_x(self, other: Item):
+    def overlapX(self, other: Item):
         return (max(self.x_position, other.x_position) <
                 min(self.x_position + self.curr_depth, other.x_position + other.curr_depth))
 
-    def overlap_y(self, other: Item):
+    def overlapY(self, other: Item):
         return (max(self.y_position, other.y_position) <
                 min(self.y_position + self.curr_width, other.y_position + other.curr_width))
 
-    def overlap_z(self, other: Item):
+    def overlapZ(self, other: Item):
         return (max(self.z_position, other.z_position) <
                 min(self.z_position + self.curr_height, other.z_position + other.curr_height))
 
-    def boxes_overlap(self, other):
+    def boxesOverlap(self, other):
         return (
-                self.overlap_x(other) and self.overlap_y(other) and self.overlap_z(other)
+                self.overlapX(other) and self.overlapY(other) and self.overlapZ(other)
         )
 
     #Funzione che verifica il supporto che un item (other) da a quello da verificare (self)
-    def get_support_area(self, other):
+    def getSupportArea(self, other):
         #Se non è attaccato, non c'è appoggio
         if abs(self.z_position - (other.z_position + other.curr_height)) > 1e-6:
             return 0.0
