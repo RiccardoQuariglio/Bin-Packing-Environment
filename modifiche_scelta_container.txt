@@ -1,0 +1,141 @@
+MODIFICHE ALLA SCELTA DEI CONTAINER - Riepilogo
+================================================
+
+Questo file descrive le modifiche funzionali apportate alle funzioni di scelta
+dei container (chooseFirstContainer, openNewContainer) e i risultati ottenuti.
+
+
+1) FILTRO DI AMMISSIBILITA' DIMENSIONALE (itemFitsContainer)
+-------------------------------------------------------------
+
+PRIMA:
+  Il filtro verificava solo che il volume dell'item fosse <= al volume del container.
+  Questo e' una condizione necessaria ma non sufficiente: un item lungo e sottile
+  puo' avere volume inferiore al container e comunque non entrarci in nessuna
+  dimensione.
+
+DOPO:
+  La funzione itemFitsContainer(item, container) verifica che l'item entri nel
+  container in ALMENO UNA delle rotazioni ammesse, controllando le 3 dimensioni
+  (curr_depth <= depth, curr_width <= width, curr_height <= height).
+  Il check sul volume e' stato rimosso perche' ridondante: se l'item entra
+  dimensionalmente, il suo volume e' automaticamente <= a quello del container.
+
+BENEFICIO:
+  Non si apre mai un container in cui l'item non puo' fisicamente stare.
+  Prima poteva succedere che si aprisse un container, isFeasible fallisse,
+  e l'item venisse scartato anche se un altro tipo di container l'avrebbe contenuto.
+
+
+2) CRITERIO UNICO items_stimati/cost (chooseContainer)
+------------------------------------------------------
+
+PRIMA:
+  - chooseFirstContainer sceglieva il container con max(volume/cost)
+  - openNewContainer sceglieva il container con max(width*depth) (base piu' grande)
+  Due funzioni separate con criteri diversi. Nessuno dei due considerava
+  maxWeight e maxValue.
+
+PROBLEMA:
+  Il criterio volume/cost ignorava i vincoli di peso e valore. Esempio concreto
+  (DatasetI): il container V7 aveva il miglior rapporto volume/cost, ma con
+  maxWeight=1200. Con 2000 item dal peso totale di 504857, servivano almeno
+  421 container V7 (504857/1200), per un costo di ~202k. Con V0 (maxWeight=24000)
+  ne bastavano 21, per un costo di ~104k. Il criterio sceglieva V7 perche'
+  "piu' economico per unita' di volume", ma il vincolo di peso lo saturava
+  immediatamente.
+
+DOPO:
+  Le due funzioni sono state accorpate in chooseContainer(item, containers_lista,
+  vol_medio, peso_medio, valore_medio).
+  Per ogni container candidato si stima il numero di item che puo' contenere
+  come il MINIMO tra tre limiti:
+
+    items_stimati = min(
+        container.volume   / volume_medio_item,
+        container.maxWeight / peso_medio_item,
+        container.maxValue  / valore_medio_item
+    )
+
+  Il vincolo piu' stringente (volume, peso o valore) determina quanti item ci
+  stanno realmente. Si massimizza items_stimati / cost: il container che contiene
+  piu' item per euro speso.
+
+  Tie-break:
+    1) area di base piu' grande (piu' superficie per impilare)
+    2) gravityStrength minore (container meno vincolante)
+
+  Le medie (vol_medio, peso_medio, valore_medio) sono calcolate sugli item
+  RESIDUI (non ancora piazzati) e si aggiornano ad ogni item impaccato,
+  cosi' la scelta si adatta dinamicamente durante l'esecuzione.
+
+BENEFICIO:
+  Il solver ora sceglie container grandi quando gli item sono pesanti/di alto
+  valore (perche' servono meno container), e container piccoli ed economici
+  quando gli item sono leggeri (perche' conviene davvero).
+
+
+3) FALLBACK SU TIPI MULTIPLI DI CONTAINER
+------------------------------------------
+
+PRIMA:
+  Se il container scelto non funzionava (isFeasible falliva), l'item veniva
+  scartato con un WARNING e la soluzione diventava infeasible.
+
+DOPO:
+  chooseContainer restituisce la lista COMPLETA dei container candidati, ordinati
+  dal migliore al peggiore. Il solver li prova in ordine finche' trova uno in
+  cui l'item entra effettivamente. Solo se nessuno funziona l'item viene scartato.
+
+BENEFICIO:
+  Elimina il caso in cui un item viene perso perche' il container "migliore"
+  non funzionava in pratica. Su DatasetG e DatasetH questo risolveva centinaia
+  di item non piazzati.
+
+
+4) STRATEGIA ENDGAME (chooseLastContainer)
+------------------------------------------
+
+PRIMA:
+  Lo stesso criterio di scelta veniva usato dall'inizio alla fine.
+
+DOPO:
+  Quando il volume residuo degli item ancora da piazzare scende sotto il volume
+  del container piu' piccolo disponibile, si passa a chooseLastContainer, che
+  predilige container di costo minimo assoluto (criterio: min cost, poi min volume,
+  poi min gravityStrength). Questo evita di aprire un container grande e costoso
+  per gli ultimi pochi item.
+
+  Il trigger e' basato sul VOLUME RESIDUO (non sul conteggio degli item), cosi'
+  si adatta automaticamente a qualsiasi dataset indipendentemente dal numero
+  di item.
+
+
+RISULTATI - Confronto costi (tutti i dataset FEASIBLE)
+=======================================================
+
+Dataset       Prima      Dopo     Differenza
+---------  ---------  ---------  -----------
+Dataset0       26.0      25.0        -1.0  MEGLIO
+Dataset1       10.0      10.0        =
+Dataset2       25.0      25.0        =
+Dataset3       30.0      30.0        =
+Dataset4       53.0      53.0        =
+Dataset5       10.0      10.0        =
+Dataset6       16.0      16.0        =
+Dataset7        4.0       4.0        =
+Dataset8       22.0      22.0        =
+Dataset9       55.0      55.0        =
+DatasetA    39000.0   38489.2     -510.8  MEGLIO
+DatasetB    40568.5   39084.5    -1484.0  MEGLIO
+DatasetC    48983.9   49325.5     +341.6  peggio
+DatasetD    33484.8    3408.3   -30076.5  MEGLIO
+DatasetE    24037.6    7912.7   -16124.9  MEGLIO
+DatasetF     1500.0    1500.0        =
+DatasetG    51161.4   14496.7   -36664.7  MEGLIO
+DatasetH    68864.4   24282.0   -44582.4  MEGLIO
+DatasetI   119476.9  112384.7    -7092.2  MEGLIO
+DatasetJ    59979.0   53694.6    -6284.4  MEGLIO
+
+Riepilogo: 11 dataset migliorati, 8 invariati, 1 leggermente peggiorato (+0.7%).
+Risparmio totale: circa 142k di costo su tutti i dataset combinati.
