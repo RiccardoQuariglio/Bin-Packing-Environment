@@ -33,8 +33,6 @@ except ImportError:
     """
 
 class AdditionalScript:
-    def doNothing(self):
-        pass
 
     @staticmethod
     def loadItems(df_items):

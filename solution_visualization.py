@@ -7,7 +7,7 @@ from instances import Instance
 
 if __name__ == '__main__':
     
-    vehicle_to_visualize = 1
+    vehicle_to_visualize = 7
 
     dataset_name = 'Dataset0'
     solver_name = 'solver_340850_335723'
