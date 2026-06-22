@@ -18,9 +18,10 @@ class SingleSolutionFeasible:
         self.merit = None
 
     def computeMerit(self):
-        # RS (Residual Space) = distanza dal bordo del container
-        rs_x = self.container.width - (self.ep[0] + self.item_width)
-        rs_y = self.container.depth - (self.ep[1] + self.item_depth)
-        rs_z = self.container.height - (self.ep[2] + self.item_height)
+        # RS (Residual Space) = distanza dal bordo del container lungo ciascun asse
+        # (asse x -> depth, asse y -> width, asse z -> height)
+        rs_depth  = self.container.depth  - (self.ep[0] + self.item_depth)
+        rs_width  = self.container.width  - (self.ep[1] + self.item_width)
+        rs_height = self.container.height - (self.ep[2] + self.item_height)
         # Merito dell'articolo (pagg. 11-12): minimizzare la somma dei residui
-        self.merit = -(rs_x + rs_y + rs_z)  # Usiamo il meno perché poi cerchi il MAX
+        self.merit = -(rs_depth + rs_width + rs_height)  # Usiamo il meno perché poi cerchi il MAX

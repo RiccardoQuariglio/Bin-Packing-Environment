@@ -1,4 +1,3 @@
-import random
 try:
     from .item import Item
     from .container import Container
@@ -9,27 +8,20 @@ except ImportError:
     from singleSolutionFeasible import SingleSolutionFeasible
 
 """
-    1) Ordine delle funzioni nel file additional_script:
-    2) loadItems(df_items) --> memorizza gli items in una lista non ordinata
-    3) loadContainers(df_vehicles) --> memorizza i containers in una lista non ordinata
-    4) sortedItemsByAHW(items) --> ordina gli items di una lista per area e altezza decrescente
-    5) stochasticSortedItems(items, randomness=0.4) --> ordina gli items di una lista con fattore di randomicità    
-    6) chooseFirstContainer(set_containers: set[Container]) --> Sceglie il miglior container da cui iniziare, dato un insieme iniziale
-    7) isFeasible(item_to_pack: Item, container: Container) -->
-    verifica che un item possa essere impaccato in un container. Verifica, in ordine, 
-    - che peso e valore dell'oggetto non superino il limite massimo del container
-    Per ogni Extreme Point del container poi verifica che:
-     - non superi il volume del container stesso
-     - non si sovrapponga a nessun oggetto già presente all'interno del container
-     - rispetti i vincoli di superficie
-    Se tutti questi requisiti vengono soddisfatti, memorizza un oggetto SingleSolutionFeasible in una lista,
-    che restituisce poi alla fine. (Nota: gli oggetti restituiti hanno come attributi l'item, il container, l'ep,
-    le dimensioni dell'oggetto e IL VALORE DEL MERITO associato a questa soluzione).
-    8) packItemIntoContainer(best_solution) -->
-    9) openNewContainer(set_containers) --> si occupa di aprire un nuovo container (scegliendone uno da un insieme) 
-       qualora un oggetto non possa essere impaccato in nessuno dei containers precedenti
-     
-    
+    Ordine delle funzioni nel file additional_script:
+    1) loadItems(df_items) --> memorizza gli items in una lista non ordinata
+    2) loadContainers(df_vehicles) --> memorizza i containers in una lista non ordinata
+    3) sortedItemsByAHW(items) --> ordina gli items di una lista per area e altezza decrescente
+    4) itemFitsContainer(item, container) --> verifica se l'item entra nel container in almeno una rotazione
+    5) chooseContainer(item_to_pack, containers_lista, vol_medio, peso_medio, valore_medio) -->
+       restituisce la lista dei container candidati ordinati dal migliore al peggiore
+       (criterio: max items_stimati/cost, poi area di base, poi min gravityStrength)
+    6) isFeasible(item_to_pack, container) --> verifica che un item possa essere impaccato in un container
+    6) chooseLastContainer(item_to_pack, containers_lista) --> endgame: restituisce i candidati
+       ordinati per costo minimo (usata quando il volume residuo è piccolo)
+    7) isFeasible(item_to_pack, container) --> verifica che un item possa essere impaccato in un container
+    8) packItemIntoContainer(best_solution) --> impacca l'item e aggiorna gli extreme points
+    9) canTakeProjection(item_new, other, direction) --> verifica proiezioni per gli extreme points
     """
 
 class AdditionalScript:
@@ -52,7 +44,10 @@ class AdditionalScript:
 
     @staticmethod
     def loadContainers(df_vehicles):
-        containers_set = set()
+        # Lista (non un set) per garantire un ordine di iterazione deterministico:
+        # i max() in chooseFirstContainer/openNewContainer risolvono così i pareggi
+        # sempre allo stesso modo, rendendo le soluzioni ripetibili.
+        containers_list = []
         for idx, row in df_vehicles.iterrows():
             # Creiamo dei "template" di veicoli
             new_container = Container(
@@ -65,8 +60,8 @@ class AdditionalScript:
                 max_value=row['maxValue'],
                 gravity=row['gravityStrength']
             )
-            containers_set.add(new_container)
-        return containers_set
+            containers_list.append(new_container)
+        return containers_list
 
     #Esempi di sorting
 
@@ -74,12 +69,12 @@ class AdditionalScript:
     def sortedItemsByAHW(items):
     #Ordina gli oggetti basandosi sulle loro dimensioni massime potenziali
         sorted_list=[]
-        def get_best_metrics(item):
+        def getBestMetrics(item):
             max_h = 0
             max_area = 0
             
             for rot_idx in item.allowed_rotations:
-                item.set_rotation(rot_idx)
+                item.setRotation(rot_idx)
                 max_area = max(max_area, item.curr_width * item.curr_depth)
                 max_h = max(max_h, item.curr_height)
                 
@@ -87,44 +82,100 @@ class AdditionalScript:
 
         sorted_list = sorted(
             items,
-            key= get_best_metrics,
+            key= getBestMetrics,
             reverse=True)
         return sorted_list
 
     @staticmethod
-    def stochasticSortedItems(items, randomness=0.4):
-        #Ordina gli item per altezza decrescente con un fattore di disturbo casuale.
-        heights = [item.height for item in items]
-        max_h = max(heights)
-        min_h = min(heights)
-        h_range = max_h - min_h
-
-        scored_items = []
-        for item in items:
-            noise = random.uniform(-randomness, randomness) * h_range
-            score = item.height + noise
-            scored_items.append((item, score))
-
-        scored_items.sort(key=lambda x: x[1], reverse=True)
-        return scored_items
+    def itemFitsContainer(item: Item, container: Container):
+        # Verifica se l'item entra nel container in almeno una delle rotazioni ammesse
+        saved_rotation = item.curr_rotation_number
+        fits = False
+        for rot_idx in item.allowed_rotations:
+            item.setRotation(rot_idx)
+            if (item.curr_depth <= container.depth and
+                    item.curr_width <= container.width and
+                    item.curr_height <= container.height):
+                fits = True
+                break
+        item.setRotation(saved_rotation)
+        return fits
 
     @staticmethod
-    def chooseFirstContainer(set_containers: set[Container]):
-        template = max(set_containers, key=lambda x: x.volume/x.cost)
-        new_instance = Container(
-            type_name=template.type,
-            width=template.width,
-            depth=template.depth,
-            height=template.height,
-            max_weight=template.max_weight,
-            cost=template.cost,
-            max_value=template.max_value,
-            gravity=template.gravity_strength
-        )
-        return new_instance
+    def chooseContainer(item_to_pack: Item, containers_lista: list[Container],
+                        vol_medio: float, peso_medio: float, valore_medio: float):
+        # Sceglie il container migliore stimando quanti item ci entreranno effettivamente.
+        #
+        # Il criterio volume/cost ignorava i vincoli di maxWeight e maxValue: un container
+        # piccolo e economico ma con maxWeight basso si satura subito e ne servono tanti,
+        # vanificando il risparmio unitario.
+        #
+        # Invece, per ogni container candidato si stima il numero di item che può contenere
+        # come il MINIMO tra tre limiti:
+        #   - volume_container / volume_medio_item   (limite spaziale)
+        #   - maxWeight / peso_medio_item             (limite di peso)
+        #   - maxValue / valore_medio_item            (limite di valore)
+        # Il vincolo più stringente determina quanti item ci stanno realmente.
+        # Si massimizza items_stimati / cost: il container che contiene più item per euro.
+        #
+        # Tie-break: area di base (più superficie), poi min gravityStrength (meno vincolante).
+        #
+        # Restituisce la lista dei candidati ordinati dal migliore al peggiore;
+        # il solver li prova in ordine finché trova uno in cui l'item entra (isFeasible).
 
+        candidates = [c for c in containers_lista if AdditionalScript.itemFitsContainer(item_to_pack, c)]
+        if not candidates:
+            return []
 
+        def containerScore(c):
+            items_by_vol = c.volume / vol_medio if vol_medio > 0 else float('inf')
+            items_by_weight = c.max_weight / peso_medio if peso_medio > 0 else float('inf')
+            items_by_value = c.max_value / valore_medio if valore_medio > 0 else float('inf')
+            items_stimati = min(items_by_vol, items_by_weight, items_by_value)
+            return (items_stimati / c.cost, c.width * c.depth, -c.gravity_strength)
 
+        candidates.sort(key=containerScore, reverse=True)
+        result = []
+        for template in candidates:
+            new_instance = Container(
+                type_name=template.type,
+                width=template.width,
+                depth=template.depth,
+                height=template.height,
+                max_weight=template.max_weight,
+                cost=template.cost,
+                max_value=template.max_value,
+                gravity=template.gravity_strength
+            )
+            result.append(new_instance)
+        return result
+
+    @staticmethod
+    def chooseLastContainer(item_to_pack: Item, containers_lista: list[Container]):
+        # Endgame: quando il volume residuo è piccolo, predilige container più economici
+        # per evitare di aprire un container grande e costoso per pochi item.
+        # Criterio lessicografico:
+        # 1) min costo (container più economico)
+        # 2) min volume (più piccolo che basta)
+        # 3) min gravityStrength (meno vincolante)
+        candidates = [c for c in containers_lista if AdditionalScript.itemFitsContainer(item_to_pack, c)]
+        if not candidates:
+            return []
+        candidates.sort(key=lambda c: (c.cost, c.volume, c.gravity_strength))
+        result = []
+        for template in candidates:
+            new_instance = Container(
+                type_name=template.type,
+                width=template.width,
+                depth=template.depth,
+                height=template.height,
+                max_weight=template.max_weight,
+                cost=template.cost,
+                max_value=template.max_value,
+                gravity=template.gravity_strength
+            )
+            result.append(new_instance)
+        return result
 
     @staticmethod
     def isFeasible(item_to_pack: Item, container: Container):
@@ -141,7 +192,7 @@ class AdditionalScript:
 
         # Itero su tutte le rotazioni ammesse per questo item
         for rot_idx in item_to_pack.allowed_rotations:
-            item_to_pack.set_rotation(rot_idx)
+            item_to_pack.setRotation(rot_idx)
 
             for ep in container.extreme_points:
                 (ex, ey, ez) = ep
@@ -156,7 +207,7 @@ class AdditionalScript:
                 #Verifica sovrapposizioni con altri oggetti nel container
                 overlapping = False
                 for box_placed in container.items_placed:
-                    if item_to_pack.boxes_overlap(box_placed):
+                    if item_to_pack.boxesOverlap(box_placed):
                         overlapping = True
                         break
                 if overlapping:
@@ -170,7 +221,7 @@ class AdditionalScript:
                     min_support_area = (item_to_pack.curr_width * item_to_pack.curr_depth *
                                         (container.gravity_strength / 100.0))
                     for box_placed in container.items_placed:
-                        current_support_area += item_to_pack.get_support_area(box_placed)
+                        current_support_area += item_to_pack.getSupportArea(box_placed)
                     if current_support_area + 1e-9 < min_support_area:
                         continue
 
@@ -186,7 +237,7 @@ class AdditionalScript:
                 feasible_solutions.append(feasible_solution)
 
         # Ripristino lo stato dell'item (non è ancora piazzato qui)
-        item_to_pack.set_rotation(saved_rotation)
+        item_to_pack.setRotation(saved_rotation)
         (item_to_pack.x_position, item_to_pack.y_position, item_to_pack.z_position) = (None, None, None)
 
         if not feasible_solutions:
@@ -318,7 +369,7 @@ class AdditionalScript:
 
         elif direction == "YZ":
             # Punto (x_new, y_new+d_new, z_new) proiettato in Y, cerchiamo supporto su Z
-            return (x_other <= x_new < x_other + d_other) and (y_other + w_other <= y_new) and (z_other <= z_new < z_other + h_other)  # Semplificaz_otherone pratica
+            return (x_other <= x_new < x_other + d_other) and (y_other + w_other <= y_new) and (z_other <= z_new < z_other + h_other)  # Semplificazione pratica
 
         elif direction == "XY":
             # Punto (x_new, y_new+d_new, z_new) proiettato in X, cerchiamo supporto su Y
@@ -340,23 +391,6 @@ class AdditionalScript:
 
 
 
-    @staticmethod
-    def openNewContainer(set_containers: set[Container]):
-        # Scegliamo il modello (template) migliore dal set
-        template = max(set_containers, key=lambda x: x.width * x.depth)
-
-        # CREIAMO UN NUOVO OGGETTO basato sui dati del template
-        new_instance = Container(
-            type_name=template.type,
-            width=template.width,
-            depth=template.depth,
-            height=template.height,
-            max_weight=template.max_weight,
-            cost=template.cost,
-            max_value=template.max_value,
-            gravity=template.gravity_strength
-        )
-        return new_instance
 
 
 
